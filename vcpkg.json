@@ -1,0 +1,12 @@
+{
+  "name": "enhanced-chess-bot",
+  "version": "1.0.0",
+  "description": "Enhanced Chess Bot with GUI and advanced AI",
+  "dependencies": [
+    "sfml",
+    "imgui",
+    "imgui-sfml",
+    "nlohmann-json",
+    "fmt"
+  ]
+}
