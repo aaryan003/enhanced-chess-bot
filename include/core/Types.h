@@ -50,16 +50,18 @@ enum class GameResult : uint8_t {
     RESIGNATION = 7
 };
 
-// Difficulty levels for AI
+// Difficulty levels for AI (updated for Day 5)
 enum class Difficulty : uint8_t {
+    BEGINNER = 0,
     EASY = 1,
     MEDIUM = 2,
     HARD = 3,
     EXPERT = 4,
-    MASTER = 5
+    MASTER = 5,
+    GRANDMASTER = 6
 };
 
-// Game modes
+// Game modes (updated for Day 5)
 enum class GameMode : uint8_t {
     HUMAN_VS_HUMAN = 0,
     HUMAN_VS_AI = 1,
@@ -119,15 +121,21 @@ struct Move {
     bool IsValid() const { return from.IsValid() && to.IsValid(); }
 };
 
-// Time control settings
+// Time control settings (updated for Day 5)
 struct TimeControl {
-    std::chrono::milliseconds baseTime{300000};  // 5 minutes default
-    std::chrono::milliseconds increment{0};      // No increment default
-    std::chrono::milliseconds remainingTime{300000};
+    std::string name;
+    std::chrono::milliseconds baseTime;
+    std::chrono::milliseconds increment;
+    std::chrono::milliseconds remainingTime;
 
-    TimeControl() = default;
-    TimeControl(std::chrono::milliseconds base, std::chrono::milliseconds inc = std::chrono::milliseconds{0})
-        : baseTime(base), increment(inc), remainingTime(base) {}
+    TimeControl()
+        : name("3+0 Blitz"),
+          baseTime(3 * 60 * 1000),
+          increment(0),
+          remainingTime(3 * 60 * 1000) {}
+
+    TimeControl(std::string n, std::chrono::milliseconds base, std::chrono::milliseconds inc = std::chrono::milliseconds{0})
+        : name(n), baseTime(base), increment(inc), remainingTime(base) {}
 };
 
 // Player configuration
@@ -147,7 +155,6 @@ struct GameConfig {
     GameMode mode;
     PlayerConfig whitePlayer;
     PlayerConfig blackPlayer;
-    TimeControl timeControl;
     bool useGui;
 
     GameConfig() : mode(GameMode::HUMAN_VS_HUMAN), useGui(false) {}

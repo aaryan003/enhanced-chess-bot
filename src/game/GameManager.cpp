@@ -27,12 +27,18 @@ namespace Chess {
         gameStarted = false;
         gamePaused = false;
         InitializePlayers();
+        whiteTimeControl = config.whitePlayer.timeControl;
+        blackTimeControl = config.blackPlayer.timeControl;
     }
 
     bool GameManager::StartGame() {
-        gameStarted = true;
-        gamePaused = false;
-        return true;
+        if (!gameStarted) {
+            gameStarted = true;
+            gamePaused = false;
+            moveStartTime = std::chrono::steady_clock::now();
+            return true;
+        }
+        return false;
     }
 
     void GameManager::PauseGame() {
@@ -40,7 +46,17 @@ namespace Chess {
     }
 
     void GameManager::ResumeGame() {
-        gamePaused = false;
+        if (gamePaused) {
+            gamePaused = false;
+            moveStartTime = std::chrono::steady_clock::now();
+        }
+    }
+
+    void GameManager::EndGame(GameResult gameResult) {
+        if (result == GameResult::ONGOING) {
+            result = gameResult;
+            if (onGameEnd) onGameEnd(result);
+        }
     }
 
     bool GameManager::MakeMove(const Move& move) {
@@ -48,11 +64,19 @@ namespace Chess {
             return false;
         }
 
+        // Update the clock for the current player
+        UpdateTime();
+
         bool success = board.MakeMove(move);
         if (success) {
             moveHistory.emplace_back(move);
             CheckGameEnd();
             if (onMoveMade) onMoveMade(move);
+
+            // Start the clock for the next player
+            if (result == GameResult::ONGOING) {
+                moveStartTime = std::chrono::steady_clock::now();
+            }
         }
         return success;
     }
@@ -81,6 +105,14 @@ namespace Chess {
         return (color == Color::WHITE) ? whiteTimeControl : blackTimeControl;
     }
 
+    std::chrono::milliseconds GameManager::GetRemainingTime(Color color) const {
+        if (color == Color::WHITE) {
+            return whiteTimeControl.remainingTime;
+        } else {
+            return blackTimeControl.remainingTime;
+        }
+    }
+
     Player* GameManager::GetPlayer(Color color) const {
         if (color == Color::WHITE) {
             return whitePlayer.get();
@@ -88,6 +120,30 @@ namespace Chess {
             return blackPlayer.get();
         }
         return nullptr;
+    }
+
+    void GameManager::UpdateTime() {
+        if (IsGameActive()) {
+            auto now = std::chrono::steady_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - moveStartTime);
+            moveStartTime = now;
+
+            if (board.GetCurrentPlayer() == Color::WHITE) {
+                whiteTimeControl.remainingTime -= elapsed;
+                whiteTimeControl.remainingTime += whiteTimeControl.increment;
+                if (whiteTimeControl.remainingTime <= std::chrono::milliseconds::zero()) {
+                    EndGame(GameResult::CHECKMATE_BLACK);
+                }
+                if (onTimeUpdate) onTimeUpdate(Color::WHITE, whiteTimeControl.remainingTime);
+            } else {
+                blackTimeControl.remainingTime -= elapsed;
+                blackTimeControl.remainingTime += blackTimeControl.increment;
+                if (blackTimeControl.remainingTime <= std::chrono::milliseconds::zero()) {
+                    EndGame(GameResult::CHECKMATE_WHITE);
+                }
+                if (onTimeUpdate) onTimeUpdate(Color::BLACK, blackTimeControl.remainingTime);
+            }
+        }
     }
 
     void GameManager::CheckGameEnd() {

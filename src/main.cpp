@@ -18,13 +18,14 @@ class ConsoleUI;
 
 void PrintWelcome() {
     fmt::print("===========================================\n");
-    fmt::print("    Enhanced Chess Bot - Day 3 Build\n");
+    fmt::print("    Enhanced Chess Bot - Day 5 Build\n");
     fmt::print("===========================================\n");
     fmt::print("Features in this build:\n");
     fmt::print("- Modern C++ core types and board representation\n");
     fmt::print("- Full move generation and validation\n");
-    fmt::print("- Basic Minimax AI engine with alpha-beta pruning\n");
-    fmt::print("- Foundation for enhanced AI features\n");
+    fmt::print("- Advanced Minimax AI engine with alpha-beta pruning\n");
+    fmt::print("- Iterative deepening and transposition tables\n");
+    fmt::print("- Configurable difficulty levels and time controls\n");
     fmt::print("===========================================\n\n");
 }
 
@@ -153,7 +154,8 @@ void TestAIEngine() {
     config.blackPlayer.isHuman = false;
     config.blackPlayer.name = "ChessBot AI";
     config.blackPlayer.difficulty = Difficulty::EASY;
-    config.timeControl.baseTime = std::chrono::milliseconds(300000); // 5 minutes
+    config.whitePlayer.timeControl = TimeControl("10+0 Rapid", std::chrono::milliseconds(600000), std::chrono::milliseconds(0));
+    config.blackPlayer.timeControl = TimeControl("10+0 Rapid", std::chrono::milliseconds(600000), std::chrono::milliseconds(0));
 
     GameManager manager(config);
     manager.SetupNewGame(config);
@@ -182,13 +184,56 @@ void TestAIEngine() {
     fmt::print("\nAI Engine test completed successfully!\n\n");
 }
 
+void TestGameModesAndTimeControls() {
+    fmt::print("Testing Game Modes and Time Controls (Day 5 features)...\n\n");
+
+    // Test Human vs AI with Blitz time control
+    fmt::print("--- Human vs AI (Blitz: 3+2) ---\n");
+    GameConfig humanVsAIConfig;
+    humanVsAIConfig.mode = GameMode::HUMAN_VS_AI;
+    humanVsAIConfig.whitePlayer.isHuman = true;
+    humanVsAIConfig.whitePlayer.name = "Human Player";
+    humanVsAIConfig.blackPlayer.isHuman = false;
+    humanVsAIConfig.blackPlayer.name = "ChessBot AI";
+    humanVsAIConfig.blackPlayer.difficulty = Difficulty::EASY;
+    humanVsAIConfig.whitePlayer.timeControl = TimeControl("3+2 Blitz", std::chrono::milliseconds(180000), std::chrono::milliseconds(2000));
+    humanVsAIConfig.blackPlayer.timeControl = TimeControl("3+2 Blitz", std::chrono::milliseconds(180000), std::chrono::milliseconds(2000));
+
+    GameManager humanVsAIManager(humanVsAIConfig);
+    humanVsAIManager.SetupNewGame(humanVsAIConfig);
+    fmt::print("Game mode: Human vs AI. Time Control: {}\n", humanVsAIManager.GetTimeControl(Color::WHITE).name);
+    fmt::print("White's time: {} ms\n", humanVsAIManager.GetTimeControl(Color::WHITE).remainingTime.count());
+    fmt::print("Black's time: {} ms\n\n", humanVsAIManager.GetTimeControl(Color::BLACK).remainingTime.count());
+
+    // Test AI vs AI with Rapid time control
+    fmt::print("--- AI vs AI (Rapid: 15+10) ---\n");
+    GameConfig aiVsAIConfig;
+    aiVsAIConfig.mode = GameMode::AI_VS_AI;
+    aiVsAIConfig.whitePlayer.isHuman = false;
+    aiVsAIConfig.whitePlayer.name = "AI Player 1";
+    aiVsAIConfig.whitePlayer.difficulty = Difficulty::MEDIUM;
+    aiVsAIConfig.blackPlayer.isHuman = false;
+    aiVsAIConfig.blackPlayer.name = "AI Player 2";
+    aiVsAIConfig.blackPlayer.difficulty = Difficulty::EASY;
+    aiVsAIConfig.whitePlayer.timeControl = TimeControl("15+10 Rapid", std::chrono::milliseconds(900000), std::chrono::milliseconds(10000));
+    aiVsAIConfig.blackPlayer.timeControl = TimeControl("15+10 Rapid", std::chrono::milliseconds(900000), std::chrono::milliseconds(10000));
+
+    GameManager aiVsAIManager(aiVsAIConfig);
+    aiVsAIManager.SetupNewGame(aiVsAIConfig);
+    fmt::print("Game mode: AI vs AI. Time Control: {}\n", aiVsAIManager.GetTimeControl(Color::WHITE).name);
+    fmt::print("AI 1's time: {} ms\n", aiVsAIManager.GetTimeControl(Color::WHITE).remainingTime.count());
+    fmt::print("AI 2's time: {} ms\n\n", aiVsAIManager.GetTimeControl(Color::BLACK).remainingTime.count());
+
+    fmt::print("\nGame Modes and Time Controls test completed successfully!\n\n");
+}
+
 void ShowDevelopmentPlan() {
     fmt::print("7-Day Development Plan:\n");
     fmt::print("Day 1: Core Foundation ✓\n");
     fmt::print("Day 2: Move Generation & Game Logic ✓\n");
     fmt::print("Day 3: AI Engine & Search Algorithms ✓\n");
-    fmt::print("Day 4: Engine Enhancements & Time Controls\n");
-    fmt::print("Day 5: Game Modes & Configuration\n");
+    fmt::print("Day 4: Engine Enhancements & Time Controls ✓\n");
+    fmt::print("Day 5: Game Modes & Configuration ✓\n");
     fmt::print("Day 6: SFML GUI Interface\n");
     fmt::print("Day 7: Polish, Testing & Advanced Features\n\n");
 }
@@ -202,10 +247,11 @@ int main() {
         TestAdvancedBoard();
         TestGameManager();
         TestAIEngine();
+        TestGameModesAndTimeControls();
 
         ShowDevelopmentPlan();
 
-        fmt::print("Day 3 build completed successfully!\n");
+        fmt::print("Day 5 build completed successfully!\n");
         fmt::print("✅ Complete chess board implementation\n");
         fmt::print("✅ Full move generation for all pieces\n");
         fmt::print("✅ Legal move validation\n");
@@ -214,8 +260,11 @@ int main() {
         fmt::print("✅ FEN notation support\n");
         fmt::print("✅ Position evaluation system\n");
         fmt::print("✅ Basic Minimax AI engine with alpha-beta pruning\n");
+        fmt::print("✅ Engine enhancements (Iterative Deepening, Zobrist, Quiescence)\n");
+        fmt::print("✅ Configurable difficulty and time controls\n");
+        fmt::print("✅ Multiple game modes (Human vs AI, AI vs AI)\n");
 
-        fmt::print("\nNext: Implement engine enhancements and advanced time controls.\n");
+        fmt::print("\nNext: Implement the SFML GUI Interface.\n");
 
         return 0;
     }

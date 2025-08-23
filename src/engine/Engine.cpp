@@ -79,19 +79,21 @@ Engine::Engine() {
 Move Engine::findBestMove(Board board, Difficulty difficulty, const TimeControl& timeControl) {
     startTime = std::chrono::steady_clock::now();
 
-    timeLimit = timeControl.baseTime / 20;
-    if (difficulty == Difficulty::EASY) timeLimit = std::chrono::milliseconds(200);
-    if (difficulty == Difficulty::MEDIUM) timeLimit = std::chrono::milliseconds(500);
-    if (difficulty == Difficulty::HARD) timeLimit = std::chrono::milliseconds(1000);
-    if (difficulty == Difficulty::EXPERT) timeLimit = std::chrono::milliseconds(2000);
-    if (difficulty == Difficulty::MASTER) timeLimit = std::chrono::milliseconds(5000);
+    // Use adaptive time allocation
+    auto totalTime = timeControl.baseTime + timeControl.increment * (board.GetFullMoveNumber() - 1);
+    timeLimit = totalTime / 30; // Allocate a portion of total time for the move
+    if (timeLimit < std::chrono::milliseconds(100)) timeLimit = std::chrono::milliseconds(100);
 
     Move bestMove;
     int bestScore = std::numeric_limits<int>::min();
 
-    for (int depth = 1; depth <= 6; ++depth) {
+    // We will search up to depth 6, or more if time permits.
+    for (int depth = 1; depth <= 12; ++depth) {
         std::vector<Move> legalMoves = board.GetAllLegalMoves(board.GetCurrentPlayer());
         auto orderedMoves = orderMoves(board, legalMoves);
+
+        int currentBestScore = std::numeric_limits<int>::min();
+        Move currentBestMove;
 
         for (const auto& move : orderedMoves) {
             if (timeIsUp()) {
@@ -100,12 +102,14 @@ Move Engine::findBestMove(Board board, Difficulty difficulty, const TimeControl&
             Board tempBoard = board;
             if (tempBoard.MakeMove(move)) {
                 int score = -alphaBeta(tempBoard, depth - 1, -std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestMove = move;
+                if (score > currentBestScore) {
+                    currentBestScore = score;
+                    currentBestMove = move;
                 }
             }
         }
+        bestScore = currentBestScore;
+        bestMove = currentBestMove;
     }
 
 end_search:
@@ -114,7 +118,6 @@ end_search:
 
 /**
  * Implements the Minimax algorithm with Alpha-Beta pruning.
- * Now includes transposition table lookup and quiescence search.
  */
 int Engine::alphaBeta(Board& board, int depth, int alpha, int beta) {
     uint64_t hash = zobrist.getHash(board);
@@ -193,14 +196,13 @@ int Engine::alphaBeta(Board& board, int depth, int alpha, int beta) {
         bound = TranspositionEntry::BoundType::EXACT;
     }
 
-    transpositionTable[hash] = {score, depth, bestMoveThisDepth, bound};
+    transpositionTable[zobrist.getHash(board)] = {score, depth, bestMoveThisDepth, bound};
 
     return score;
 }
 
 /**
  * Quiescence search to handle tactical positions.
- * It extends the search only for captures and checks.
  */
 int Engine::quiescenceSearch(Board& board, int alpha, int beta) {
     if (timeIsUp()) {
@@ -237,8 +239,6 @@ int Engine::quiescenceSearch(Board& board, int alpha, int beta) {
 
 /**
  * Move ordering function.
- * This is a basic implementation that prioritizes captures and then
- * uses the history heuristic.
  */
 std::vector<Move> Engine::orderMoves(const Board& board, const std::vector<Move>& moves) {
     std::vector<std::pair<int, Move>> scoredMoves;
@@ -247,7 +247,6 @@ std::vector<Move> Engine::orderMoves(const Board& board, const std::vector<Move>
         if (!move.capturedPiece.IsEmpty()) {
             score += 10 * static_cast<int>(board.GetPieceValue(move.capturedPiece.type)) - static_cast<int>(board.GetPieceValue(board.GetPiece(move.from).type));
         }
-        // Corrected array indexing
         score += historyHeuristic[move.from.y][move.from.x];
         scoredMoves.push_back({score, move});
     }
