@@ -2,6 +2,7 @@
 
 #include "core/Types.h"
 #include "core/Board.h"
+#include "engine/Engine.h" // Include the new Engine class
 #include <string>
 #include <chrono>
 #include <memory>
@@ -30,9 +31,9 @@ public:
 
     // Optional overrides
     virtual void OnGameStart() {}
-    virtual void OnGameEnd(GameResult result) {}
-    virtual void OnOpponentMove(const Move& move) {}
-    virtual void OnTimeUpdate(std::chrono::milliseconds remainingTime) {}
+    virtual void OnGameEnd(GameResult) {}
+    virtual void OnOpponentMove(const Move&) {}
+    virtual void OnTimeUpdate(std::chrono::milliseconds) {}
 
     // Time management
     virtual bool NeedsTimeToThink() const { return false; }
@@ -68,7 +69,7 @@ public:
     AIPlayer(const std::string& name, Color color, Difficulty diff, const PlayerConfig& config = PlayerConfig());
 
     bool IsHuman() const override { return false; }
-    Move GetMove(const Board& board, std::chrono::milliseconds timeLimit) override = 0;
+    virtual Move GetMove(const Board& board, std::chrono::milliseconds timeLimit) = 0;
 
     bool NeedsTimeToThink() const override { return true; }
     void StopThinking() override { isThinking = false; }
@@ -83,6 +84,17 @@ protected:
     void StopThinkingInternal();
     std::chrono::milliseconds GetThinkingTime() const;
 };
+
+// Concrete AI player that uses our Engine
+class BasicAIPlayer : public AIPlayer {
+private:
+    Engine engine;
+
+public:
+    BasicAIPlayer(const std::string& name, Color color, Difficulty diff, const PlayerConfig& config = PlayerConfig());
+    Move GetMove(const Board& board, std::chrono::milliseconds timeLimit) override;
+};
+
 
 // Factory function
 std::unique_ptr<Player> CreatePlayer(const PlayerConfig& config, Color color);

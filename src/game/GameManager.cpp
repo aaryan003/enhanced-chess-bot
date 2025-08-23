@@ -1,4 +1,3 @@
-// src/game/GameManager.cpp
 #include "game/GameManager.h"
 #include "game/Player.h"
 #include <fmt/format.h>
@@ -7,10 +6,17 @@ namespace Chess {
 
     GameManager::GameManager() : result(GameResult::ONGOING), gameStarted(false), gamePaused(false) {
         board.SetupStartingPosition();
+        InitializePlayers();
     }
 
     GameManager::GameManager(const GameConfig& config) : GameManager() {
         this->config = config;
+        InitializePlayers();
+    }
+
+    void GameManager::InitializePlayers() {
+        whitePlayer = CreatePlayer(config.whitePlayer, Color::WHITE);
+        blackPlayer = CreatePlayer(config.blackPlayer, Color::BLACK);
     }
 
     void GameManager::SetupNewGame(const GameConfig& newConfig) {
@@ -20,6 +26,7 @@ namespace Chess {
         result = GameResult::ONGOING;
         gameStarted = false;
         gamePaused = false;
+        InitializePlayers();
     }
 
     bool GameManager::StartGame() {
@@ -68,6 +75,19 @@ namespace Chess {
 
     const TimeControl& GameManager::GetTimeControl(Color color) const {
         return (color == Color::WHITE) ? whiteTimeControl : blackTimeControl;
+    }
+
+    TimeControl& GameManager::GetTimeControl(Color color) {
+        return (color == Color::WHITE) ? whiteTimeControl : blackTimeControl;
+    }
+
+    Player* GameManager::GetPlayer(Color color) const {
+        if (color == Color::WHITE) {
+            return whitePlayer.get();
+        } else if (color == Color::BLACK) {
+            return blackPlayer.get();
+        }
+        return nullptr;
     }
 
     void GameManager::CheckGameEnd() {

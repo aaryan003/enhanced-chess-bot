@@ -1,4 +1,5 @@
 #include "game/Player.h"
+#include <iostream>
 
 namespace Chess {
 
@@ -37,12 +38,21 @@ namespace Chess {
         return std::chrono::duration_cast<std::chrono::milliseconds>(now - thinkingStartTime);
     }
 
+    // --- BasicAIPlayer implementation ---
+    BasicAIPlayer::BasicAIPlayer(const std::string& name, Color color, Difficulty diff, const PlayerConfig& config)
+        : AIPlayer(name, color, diff, config) {}
+
+    Move BasicAIPlayer::GetMove(const Board& board, std::chrono::milliseconds timeLimit) {
+        // The AI will use its internal engine to find the best move
+        return engine.findBestMove(board, difficulty, config.timeControl);
+    }
+
+    // --- Factory function implementation ---
     std::unique_ptr<Player> CreatePlayer(const PlayerConfig& config, Color color) {
         if (config.isHuman) {
             return std::make_unique<HumanPlayer>(config.name, color, config);
         } else {
-            // For now, return nullptr - we'll implement AI players tomorrow
-            return nullptr;
+            return std::make_unique<BasicAIPlayer>(config.name, color, config.difficulty, config);
         }
     }
 

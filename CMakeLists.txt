@@ -20,19 +20,34 @@ find_package(fmt CONFIG REQUIRED)
 # Include directories
 include_directories(include)
 
-# Collect source files
-file(GLOB_RECURSE SOURCES
-        "src/*.cpp"
-        "src/*.hpp"
+# Collect source files explicitly
+set(CORE_SOURCES
+        src/core/Board.cpp
+        src/core/Types.cpp
 )
 
-# Create executable - explicitly as console app
-add_executable(chess-bot ${SOURCES})
+set(GAME_SOURCES
+        src/game/GameManager.cpp
+        src/game/Player.cpp
+)
 
-# Add this after creating the executable
-if(MINGW)
-    target_link_options(chess-bot PRIVATE -mconsole)
-endif()
+set(ENGINE_SOURCES
+        src/engine/Engine.cpp
+)
+
+set(MAIN_SOURCE
+        src/main.cpp
+)
+
+set(SOURCES
+        ${CORE_SOURCES}
+        ${GAME_SOURCES}
+        ${ENGINE_SOURCES}
+        ${MAIN_SOURCE}
+)
+
+# Create executable
+add_executable(chess-bot ${SOURCES})
 
 # Force console subsystem for MinGW
 if (WIN32 AND MINGW)

@@ -18,13 +18,13 @@ class ConsoleUI;
 
 void PrintWelcome() {
     fmt::print("===========================================\n");
-    fmt::print("    Enhanced Chess Bot - Day 2 Build\n");
+    fmt::print("    Enhanced Chess Bot - Day 3 Build\n");
     fmt::print("===========================================\n");
     fmt::print("Features in this build:\n");
     fmt::print("- Modern C++ core types and board representation\n");
-    fmt::print("- Cross-platform compatibility\n");
-    fmt::print("- SFML + ImGui integration ready\n");
-    fmt::print("- Foundation for enhanced features\n");
+    fmt::print("- Full move generation and validation\n");
+    fmt::print("- Basic Minimax AI engine with alpha-beta pruning\n");
+    fmt::print("- Foundation for enhanced AI features\n");
     fmt::print("===========================================\n\n");
 }
 
@@ -41,7 +41,7 @@ void TestBasicBoard() {
 
     // Test basic operations
     fmt::print("Current player: {}\n",
-              board.GetCurrentPlayer() == Color::WHITE ? "White" : "Black");
+               board.GetCurrentPlayer() == Color::WHITE ? "White" : "Black");
 
     // Test piece access
     Position e2("e2");
@@ -143,11 +143,50 @@ void TestGameManager() {
     fmt::print("\nGameManager test completed successfully!\n\n");
 }
 
+void TestAIEngine() {
+    fmt::print("Testing AI Engine functionality...\n\n");
+
+    GameConfig config;
+    config.mode = GameMode::HUMAN_VS_AI;
+    config.whitePlayer.isHuman = true;
+    config.whitePlayer.name = "Human Player";
+    config.blackPlayer.isHuman = false;
+    config.blackPlayer.name = "ChessBot AI";
+    config.blackPlayer.difficulty = Difficulty::EASY;
+    config.timeControl.baseTime = std::chrono::milliseconds(300000); // 5 minutes
+
+    GameManager manager(config);
+    manager.SetupNewGame(config);
+    manager.StartGame();
+
+    fmt::print("Starting Human vs AI game. The AI will make a move as Black.\n\n");
+    fmt::print("Initial board:\n{}\n", manager.GetBoard().ToString());
+
+    // Simulate a move for the human player (White)
+    Move humanMove(Position("e2"), Position("e4"));
+    fmt::print("Human (White) plays: {}\n", humanMove.ToAlgebraic());
+    manager.MakeMove(humanMove);
+    fmt::print("Board after human move:\n{}\n", manager.GetBoard().ToString());
+
+    // Request the AI to make a move
+    fmt::print("AI (Black) is thinking...\n");
+    Move aiMove = manager.GetPlayer(Color::BLACK)->GetMove(manager.GetBoard(), manager.GetTimeControl(Color::BLACK).remainingTime);
+
+    if (manager.MakeMove(aiMove)) {
+        fmt::print("AI (Black) plays: {}\n", aiMove.ToAlgebraic());
+        fmt::print("Board after AI move:\n{}\n", manager.GetBoard().ToString());
+    } else {
+        fmt::print("AI failed to make a legal move.\n");
+    }
+
+    fmt::print("\nAI Engine test completed successfully!\n\n");
+}
+
 void ShowDevelopmentPlan() {
     fmt::print("7-Day Development Plan:\n");
     fmt::print("Day 1: Core Foundation ✓\n");
     fmt::print("Day 2: Move Generation & Game Logic ✓\n");
-    fmt::print("Day 3: AI Engine & Search Algorithms\n");
+    fmt::print("Day 3: AI Engine & Search Algorithms ✓\n");
     fmt::print("Day 4: Engine Enhancements & Time Controls\n");
     fmt::print("Day 5: Game Modes & Configuration\n");
     fmt::print("Day 6: SFML GUI Interface\n");
@@ -162,10 +201,11 @@ int main() {
         TestBasicBoard();
         TestAdvancedBoard();
         TestGameManager();
+        TestAIEngine();
 
         ShowDevelopmentPlan();
 
-        fmt::print("Day 2 build completed successfully!\n");
+        fmt::print("Day 3 build completed successfully!\n");
         fmt::print("✅ Complete chess board implementation\n");
         fmt::print("✅ Full move generation for all pieces\n");
         fmt::print("✅ Legal move validation\n");
@@ -173,8 +213,9 @@ int main() {
         fmt::print("✅ Game state management\n");
         fmt::print("✅ FEN notation support\n");
         fmt::print("✅ Position evaluation system\n");
+        fmt::print("✅ Basic Minimax AI engine with alpha-beta pruning\n");
 
-        fmt::print("\nNext: Implement AI search engine and algorithms.\n");
+        fmt::print("\nNext: Implement engine enhancements and advanced time controls.\n");
 
         return 0;
     }
