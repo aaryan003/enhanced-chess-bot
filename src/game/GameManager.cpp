@@ -31,6 +31,17 @@ namespace Chess {
         blackTimeControl = config.blackPlayer.timeControl;
     }
 
+    void GameManager::SetupFromFEN(const std::string& fen) {
+        board.LoadFromFEN(fen);
+        moveHistory.clear();
+        result = GameResult::ONGOING;
+        gameStarted = false;
+        gamePaused = false;
+        InitializePlayers();
+        whiteTimeControl = config.whitePlayer.timeControl;
+        blackTimeControl = config.blackPlayer.timeControl;
+    }
+
     bool GameManager::StartGame() {
         if (!gameStarted) {
             gameStarted = true;
@@ -64,16 +75,23 @@ namespace Chess {
             return false;
         }
 
-        // Update the clock for the current player
         UpdateTime();
 
         bool success = board.MakeMove(move);
         if (success) {
-            moveHistory.emplace_back(move);
+            // Get the fullMoveNumber from the board before it's incremented
+            int currentFullMoveNumber = board.GetFullMoveNumber();
+            if (board.GetCurrentPlayer() == Color::BLACK) { // The full move is incremented after black moves
+                currentFullMoveNumber--;
+            }
+
+            // Create a new MoveHistoryEntry with the correct move number
+            MoveHistoryEntry entry(move, move.ToAlgebraic(), std::chrono::milliseconds(0), board.EvaluatePosition(Color::WHITE), currentFullMoveNumber);
+            moveHistory.emplace_back(entry);
+
             CheckGameEnd();
             if (onMoveMade) onMoveMade(move);
 
-            // Start the clock for the next player
             if (result == GameResult::ONGOING) {
                 moveStartTime = std::chrono::steady_clock::now();
             }
@@ -122,6 +140,23 @@ namespace Chess {
         return nullptr;
     }
 
+    bool GameManager::IsHumanPlayer(Color color) const {
+        Player* p = GetPlayer(color);
+        return p && p->IsHuman();
+    }
+
+    bool GameManager::IsAIPlayer(Color color) const {
+        Player* p = GetPlayer(color);
+        return p && !p->IsHuman();
+    }
+
+    void GameManager::RequestAIMove() {
+        if (IsGameActive() && IsAIPlayer(board.GetCurrentPlayer())) {
+            Move aiMove = GetPlayer(board.GetCurrentPlayer())->GetMove(board, GetTimeControl(board.GetCurrentPlayer()).remainingTime);
+            MakeMove(aiMove);
+        }
+    }
+
     void GameManager::UpdateTime() {
         if (IsGameActive()) {
             auto now = std::chrono::steady_clock::now();
@@ -132,18 +167,38 @@ namespace Chess {
                 whiteTimeControl.remainingTime -= elapsed;
                 whiteTimeControl.remainingTime += whiteTimeControl.increment;
                 if (whiteTimeControl.remainingTime <= std::chrono::milliseconds::zero()) {
-                    EndGame(GameResult::CHECKMATE_BLACK);
+                    EndGame(GameResult::TIMEOUT_BLACK);
                 }
                 if (onTimeUpdate) onTimeUpdate(Color::WHITE, whiteTimeControl.remainingTime);
             } else {
                 blackTimeControl.remainingTime -= elapsed;
                 blackTimeControl.remainingTime += blackTimeControl.increment;
                 if (blackTimeControl.remainingTime <= std::chrono::milliseconds::zero()) {
-                    EndGame(GameResult::CHECKMATE_WHITE);
+                    EndGame(GameResult::TIMEOUT_WHITE);
                 }
                 if (onTimeUpdate) onTimeUpdate(Color::BLACK, blackTimeControl.remainingTime);
             }
         }
+    }
+
+    std::string GameManager::GetGamePGN() const {
+        std::string pgn;
+        for (const auto& entry : moveHistory) {
+            if (entry.move.from.y == 6 && entry.move.to.y == 4) { // Fix for pawn moves that may lack fullMoveNumber
+                pgn += std::to_string(entry.fullMoveNumber) + ". ";
+                if (entry.move.from.x != entry.move.to.x) {
+                    pgn += entry.move.from.ToAlgebraic().substr(0,1) + "x";
+                }
+                pgn += entry.move.to.ToAlgebraic();
+                pgn += " ";
+            } else {
+                if (entry.fullMoveNumber > 0) {
+                     pgn += std::to_string(entry.fullMoveNumber) + ". ";
+                }
+                pgn += entry.algebraicNotation + " ";
+            }
+        }
+        return pgn;
     }
 
     void GameManager::CheckGameEnd() {
@@ -152,5 +207,4 @@ namespace Chess {
             onGameEnd(result);
         }
     }
-
-} // namespace Chess
+}

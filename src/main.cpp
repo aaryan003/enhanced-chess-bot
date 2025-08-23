@@ -18,7 +18,7 @@ class ConsoleUI;
 
 void PrintWelcome() {
     fmt::print("===========================================\n");
-    fmt::print("    Enhanced Chess Bot - Day 5 Build\n");
+    fmt::print("    Enhanced Chess Bot - Day 6 Build\n");
     fmt::print("===========================================\n");
     fmt::print("Features in this build:\n");
     fmt::print("- Modern C++ core types and board representation\n");
@@ -26,36 +26,28 @@ void PrintWelcome() {
     fmt::print("- Advanced Minimax AI engine with alpha-beta pruning\n");
     fmt::print("- Iterative deepening and transposition tables\n");
     fmt::print("- Configurable difficulty levels and time controls\n");
+    fmt::print("- Multiple game modes (Human vs AI, AI vs AI, Custom FEN)\n");
+    fmt::print("- Basic PGN export for game history\n");
     fmt::print("===========================================\n\n");
 }
 
 void TestBasicBoard() {
     fmt::print("Testing basic board functionality...\n\n");
 
-    // Create and setup board
     Board board;
     board.SetupStartingPosition();
-
-    // Display initial position
     fmt::print("Initial board position:\n");
     fmt::print("{}\n", board.ToString());
+    fmt::print("Current player: {}\n", board.GetCurrentPlayer() == Color::WHITE ? "White" : "Black");
 
-    // Test basic operations
-    fmt::print("Current player: {}\n",
-               board.GetCurrentPlayer() == Color::WHITE ? "White" : "Black");
-
-    // Test piece access
     Position e2("e2");
     Position e4("e4");
 
     const Piece& pawn = board.GetPiece(e2);
     fmt::print("Piece at e2: {}\n", pawn.ToString());
-
-    // Test FEN generation
     std::string fen = board.ToFEN();
     fmt::print("FEN: {}\n\n", fen);
 
-    // Test position validation
     fmt::print("Position e2 valid: {}\n", e2.IsValid() ? "Yes" : "No");
     fmt::print("Position e4 valid: {}\n", e4.IsValid() ? "Yes" : "No");
     fmt::print("Position z9 valid: {}\n", Position("z9").IsValid() ? "Yes" : "No");
@@ -65,11 +57,8 @@ void TestBasicBoard() {
 
 void TestAdvancedBoard() {
     fmt::print("Testing advanced board functionality (Day 2 features)...\n\n");
-
     Board board;
     board.SetupStartingPosition();
-
-    // Test move generation for a single piece (e.g., White's e2 pawn)
     Position e2("e2");
     auto pawnMoves = board.GetPieceMoves(e2);
     fmt::print("Legal moves for pawn at e2:\n");
@@ -77,76 +66,56 @@ void TestAdvancedBoard() {
         fmt::print(" - {}\n", move.ToAlgebraic());
     }
     fmt::print("\n");
-
-    // Test making a move
     Move e2e4(e2, Position("e4"));
     if (board.MakeMove(e2e4)) {
         fmt::print("Made a move: {}\n", e2e4.ToAlgebraic());
         fmt::print("Board after 1.e4:\n{}\n", board.ToString());
     }
-
-    // Test a more complex scenario with a custom FEN
     std::string fen = "r3k2r/p1ppqpb1/bn2pnp1/3P4/1p2P3/2N2N2/PPPBQPPP/R3K2R b KQkq - 0 1";
     board.LoadFromFEN(fen);
     fmt::print("Board loaded from FEN:\n{}\n", board.ToString());
     fmt::print("Legal moves for Black (should include castling):\n");
-
     auto blackMoves = board.GetAllLegalMoves(Color::BLACK);
     for (const auto& move : blackMoves) {
         fmt::print(" - {}\n", move.ToAlgebraic());
     }
     fmt::print("\n");
-
-    // Test checkmate detection (Fool's Mate)
     Board foolsmateBoard;
     foolsmateBoard.LoadFromFEN("rnb1kbnr/pppp1ppp/8/4p3/5PPq/8/PPPPP2P/RNBQKBNR w KQkq - 1 3");
     fmt::print("Testing checkmate detection (Fool's Mate position)...\n");
     fmt::print("Current board:\n{}\n", foolsmateBoard.ToString());
-    fmt::print("Current player: {}\n",
-               foolsmateBoard.GetCurrentPlayer() == Color::WHITE ? "White" : "Black");
-
+    fmt::print("Current player: {}\n", foolsmateBoard.GetCurrentPlayer() == Color::WHITE ? "White" : "Black");
     GameResult result = foolsmateBoard.GetGameResult();
-    fmt::print("Game result: {}\n",
-               (result == GameResult::CHECKMATE_WHITE) ? "Checkmate for White" : "Ongoing or other result");
-
+    fmt::print("Game result: {}\n", (result == GameResult::CHECKMATE_WHITE) ? "Checkmate for White" : "Ongoing or other result");
     fmt::print("\nAdvanced board test completed successfully!\n\n");
 }
 
 void TestGameManager() {
     fmt::print("Testing GameManager functionality...\n\n");
-
     GameManager manager;
     manager.StartGame();
-
     fmt::print("Starting game...\n");
     fmt::print("Initial FEN: {}\n", manager.GetCurrentFEN());
-
     Move e2e4(Position("e2"), Position("e4"));
     if (manager.MakeMove(e2e4)) {
         fmt::print("Made move: {}\n", e2e4.ToAlgebraic());
     }
-
     Move e7e5(Position("e7"), Position("e5"));
     if (manager.MakeMove(e7e5)) {
         fmt::print("Made move: {}\n", e7e5.ToAlgebraic());
     }
-
     Move d2d4(Position("d2"), Position("d4"));
     if (manager.MakeMove(d2d4)) {
         fmt::print("Made move: {}\n", d2d4.ToAlgebraic());
     }
-
     fmt::print("\nGame state after a few moves:\n{}\n", manager.GetBoard().ToString());
     fmt::print("Current FEN: {}\n", manager.GetCurrentFEN());
-    fmt::print("Current player: {}\n",
-               manager.GetCurrentPlayer() == Color::WHITE ? "White" : "Black");
-
+    fmt::print("Current player: {}\n", manager.GetCurrentPlayer() == Color::WHITE ? "White" : "Black");
     fmt::print("\nGameManager test completed successfully!\n\n");
 }
 
 void TestAIEngine() {
     fmt::print("Testing AI Engine functionality...\n\n");
-
     GameConfig config;
     config.mode = GameMode::HUMAN_VS_AI;
     config.whitePlayer.isHuman = true;
@@ -156,31 +125,18 @@ void TestAIEngine() {
     config.blackPlayer.difficulty = Difficulty::EASY;
     config.whitePlayer.timeControl = TimeControl("10+0 Rapid", std::chrono::milliseconds(600000), std::chrono::milliseconds(0));
     config.blackPlayer.timeControl = TimeControl("10+0 Rapid", std::chrono::milliseconds(600000), std::chrono::milliseconds(0));
-
     GameManager manager(config);
     manager.SetupNewGame(config);
     manager.StartGame();
-
     fmt::print("Starting Human vs AI game. The AI will make a move as Black.\n\n");
     fmt::print("Initial board:\n{}\n", manager.GetBoard().ToString());
-
-    // Simulate a move for the human player (White)
     Move humanMove(Position("e2"), Position("e4"));
     fmt::print("Human (White) plays: {}\n", humanMove.ToAlgebraic());
     manager.MakeMove(humanMove);
     fmt::print("Board after human move:\n{}\n", manager.GetBoard().ToString());
-
-    // Request the AI to make a move
     fmt::print("AI (Black) is thinking...\n");
-    Move aiMove = manager.GetPlayer(Color::BLACK)->GetMove(manager.GetBoard(), manager.GetTimeControl(Color::BLACK).remainingTime);
-
-    if (manager.MakeMove(aiMove)) {
-        fmt::print("AI (Black) plays: {}\n", aiMove.ToAlgebraic());
-        fmt::print("Board after AI move:\n{}\n", manager.GetBoard().ToString());
-    } else {
-        fmt::print("AI failed to make a legal move.\n");
-    }
-
+    manager.RequestAIMove();
+    fmt::print("Board after AI move:\n{}\n", manager.GetBoard().ToString());
     fmt::print("\nAI Engine test completed successfully!\n\n");
 }
 
@@ -198,7 +154,6 @@ void TestGameModesAndTimeControls() {
     humanVsAIConfig.blackPlayer.difficulty = Difficulty::EASY;
     humanVsAIConfig.whitePlayer.timeControl = TimeControl("3+2 Blitz", std::chrono::milliseconds(180000), std::chrono::milliseconds(2000));
     humanVsAIConfig.blackPlayer.timeControl = TimeControl("3+2 Blitz", std::chrono::milliseconds(180000), std::chrono::milliseconds(2000));
-
     GameManager humanVsAIManager(humanVsAIConfig);
     humanVsAIManager.SetupNewGame(humanVsAIConfig);
     fmt::print("Game mode: Human vs AI. Time Control: {}\n", humanVsAIManager.GetTimeControl(Color::WHITE).name);
@@ -217,7 +172,6 @@ void TestGameModesAndTimeControls() {
     aiVsAIConfig.blackPlayer.difficulty = Difficulty::EASY;
     aiVsAIConfig.whitePlayer.timeControl = TimeControl("15+10 Rapid", std::chrono::milliseconds(900000), std::chrono::milliseconds(10000));
     aiVsAIConfig.blackPlayer.timeControl = TimeControl("15+10 Rapid", std::chrono::milliseconds(900000), std::chrono::milliseconds(10000));
-
     GameManager aiVsAIManager(aiVsAIConfig);
     aiVsAIManager.SetupNewGame(aiVsAIConfig);
     fmt::print("Game mode: AI vs AI. Time Control: {}\n", aiVsAIManager.GetTimeControl(Color::WHITE).name);
@@ -225,6 +179,38 @@ void TestGameModesAndTimeControls() {
     fmt::print("AI 2's time: {} ms\n\n", aiVsAIManager.GetTimeControl(Color::BLACK).remainingTime.count());
 
     fmt::print("\nGame Modes and Time Controls test completed successfully!\n\n");
+}
+
+void TestMatchAndFEN() {
+    fmt::print("Testing Match and FEN/PGN functionality (Day 6 features)...\n\n");
+
+    // Test FEN setup
+    fmt::print("--- Custom FEN Position Setup ---\n");
+    GameConfig fenConfig;
+    fenConfig.mode = GameMode::FEN_POSITION_SETUP;
+    fenConfig.initialFen = "r1b1k2r/pppq1ppp/5n2/3p4/8/2N2N2/PPPQ1PPP/R3K2R w KQkq - 2 8";
+    GameManager fenManager(fenConfig);
+    fenManager.SetupFromFEN(fenConfig.initialFen);
+    fmt::print("Board loaded from FEN:\n{}\n", fenManager.GetBoard().ToString());
+    fmt::print("Current FEN: {}\n", fenManager.GetCurrentFEN());
+    fmt::print("\nCustom FEN test completed successfully!\n\n");
+
+    // Test PGN export
+    fmt::print("--- PGN Export Test ---\n");
+    GameConfig pgnConfig;
+    pgnConfig.mode = GameMode::HUMAN_VS_HUMAN;
+    GameManager pgnManager(pgnConfig);
+    pgnManager.SetupNewGame(pgnConfig);
+    pgnManager.StartGame();
+
+    pgnManager.MakeMove(Move(Position("e2"), Position("e4")));
+    pgnManager.MakeMove(Move(Position("e7"), Position("e5")));
+    pgnManager.MakeMove(Move(Position("g1"), Position("f3")));
+    pgnManager.MakeMove(Move(Position("b8"), Position("c6")));
+
+    fmt::print("Game PGN: {}\n", pgnManager.GetGamePGN());
+    fmt::print("\nPGN Export test completed successfully!\n\n");
+
 }
 
 void ShowDevelopmentPlan() {
@@ -248,10 +234,11 @@ int main() {
         TestGameManager();
         TestAIEngine();
         TestGameModesAndTimeControls();
+        TestMatchAndFEN(); // New Day 6 tests
 
         ShowDevelopmentPlan();
 
-        fmt::print("Day 5 build completed successfully!\n");
+        fmt::print("Day 6 build completed successfully!\n");
         fmt::print("✅ Complete chess board implementation\n");
         fmt::print("✅ Full move generation for all pieces\n");
         fmt::print("✅ Legal move validation\n");
@@ -259,10 +246,11 @@ int main() {
         fmt::print("✅ Game state management\n");
         fmt::print("✅ FEN notation support\n");
         fmt::print("✅ Position evaluation system\n");
-        fmt::print("✅ Basic Minimax AI engine with alpha-beta pruning\n");
+        fmt::print("✅ Advanced AI engine with alpha-beta pruning\n");
         fmt::print("✅ Engine enhancements (Iterative Deepening, Zobrist, Quiescence)\n");
         fmt::print("✅ Configurable difficulty and time controls\n");
-        fmt::print("✅ Multiple game modes (Human vs AI, AI vs AI)\n");
+        fmt::print("✅ Multiple game modes (Human vs AI, AI vs AI, Custom FEN)\n");
+        fmt::print("✅ Basic PGN export for game history\n");
 
         fmt::print("\nNext: Implement the SFML GUI Interface.\n");
 

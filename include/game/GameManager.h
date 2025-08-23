@@ -13,24 +13,12 @@ namespace Chess {
 class Player;
 class AIPlayer;
 
-// Move history entry
-struct MoveHistoryEntry {
-    Move move;
-    std::string algebraicNotation;
-    std::chrono::milliseconds timeSpent;
-    float evaluation;
-
-    MoveHistoryEntry(const Move& m, const std::string& notation = "",
-                     std::chrono::milliseconds time = std::chrono::milliseconds{0},
-                     float eval = 0.0f)
-        : move(m), algebraicNotation(notation), timeSpent(time), evaluation(eval) {}
-};
-
 class GameManager {
 private:
     Board board;
     GameConfig config;
     std::vector<MoveHistoryEntry> moveHistory;
+    GameStats gameStats; // New member for game stats
 
     // Time management
     std::chrono::steady_clock::time_point moveStartTime;
@@ -73,6 +61,7 @@ public:
     bool MakeMove(const Position& from, const Position& to, PieceType promotion = PieceType::EMPTY);
     void UndoLastMove();
     void UndoMovesToPosition(size_t historyIndex);
+    void RequestAIMove();
 
     // Game state queries
     const Board& GetBoard() const { return board; }
@@ -116,9 +105,6 @@ public:
     void SetOnMoveMade(std::function<void(const Move&)> callback) { onMoveMade = callback; }
     void SetOnGameEnd(std::function<void(GameResult)> callback) { onGameEnd = callback; }
     void SetOnTimeUpdate(std::function<void(Color, std::chrono::milliseconds)> callback) { onTimeUpdate = callback; }
-
-    // AI move request (for AI vs AI games)
-    void RequestAIMove();
 
 private:
     void InitializePlayers();

@@ -47,7 +47,9 @@ enum class GameResult : uint8_t {
     DRAW_50_MOVES = 4,
     DRAW_REPETITION = 5,
     DRAW_MATERIAL = 6,
-    RESIGNATION = 7
+    RESIGNATION = 7,
+    TIMEOUT_WHITE = 8,
+    TIMEOUT_BLACK = 9
 };
 
 // Difficulty levels for AI (updated for Day 5)
@@ -61,11 +63,13 @@ enum class Difficulty : uint8_t {
     GRANDMASTER = 6
 };
 
-// Game modes (updated for Day 5)
+// Game modes (updated for Day 6)
 enum class GameMode : uint8_t {
     HUMAN_VS_HUMAN = 0,
     HUMAN_VS_AI = 1,
-    AI_VS_AI = 2
+    AI_VS_AI = 2,
+    FEN_POSITION_SETUP = 3, // New mode for custom position setup
+    PUZZLE_MODE = 4 // Placeholder for future puzzle mode
 };
 
 // Position on the chess board
@@ -150,14 +154,39 @@ struct PlayerConfig {
         : name(n), isHuman(human), difficulty(diff) {}
 };
 
-// Game configuration
+// Game configuration (updated for Day 6)
 struct GameConfig {
     GameMode mode;
     PlayerConfig whitePlayer;
     PlayerConfig blackPlayer;
     bool useGui;
+    std::string initialFen;
 
-    GameConfig() : mode(GameMode::HUMAN_VS_HUMAN), useGui(false) {}
+    GameConfig() : mode(GameMode::HUMAN_VS_HUMAN), useGui(false), initialFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {}
+};
+
+// Game statistics (new for Day 6)
+struct GameStats {
+    int totalMoves;
+    int whiteWins;
+    int blackWins;
+    int draws;
+
+    GameStats() : totalMoves(0), whiteWins(0), blackWins(0), draws(0) {}
+};
+
+// Move history entry (updated for Day 6)
+struct MoveHistoryEntry {
+    Move move;
+    std::string algebraicNotation;
+    std::chrono::milliseconds timeSpent;
+    float evaluation;
+    int fullMoveNumber; // Added to store the move number
+
+    MoveHistoryEntry(const Move& m, const std::string& notation = "",
+                     std::chrono::milliseconds time = std::chrono::milliseconds{0},
+                     float eval = 0.0f, int moveNum = 0)
+        : move(m), algebraicNotation(notation), timeSpent(time), evaluation(eval), fullMoveNumber(moveNum) {}
 };
 
 } // namespace Chess
