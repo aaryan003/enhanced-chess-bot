@@ -35,14 +35,21 @@ set(ENGINE_SOURCES
         src/engine/Engine.cpp
 )
 
+# ADD THIS: UI sources section
+set(UI_SOURCES
+        src/ui/Gui.cpp
+)
+
 set(MAIN_SOURCE
         src/main.cpp
 )
 
+# UPDATE THIS: Include UI_SOURCES in the SOURCES variable
 set(SOURCES
         ${CORE_SOURCES}
         ${GAME_SOURCES}
         ${ENGINE_SOURCES}
+        ${UI_SOURCES}
         ${MAIN_SOURCE}
 )
 
