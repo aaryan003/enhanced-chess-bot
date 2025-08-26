@@ -18,7 +18,7 @@ private:
     Board board;
     GameConfig config;
     std::vector<MoveHistoryEntry> moveHistory;
-    GameStats gameStats; // New member for game stats
+    GameStats gameStats;
 
     // Time management
     std::chrono::steady_clock::time_point moveStartTime;
@@ -44,10 +44,17 @@ public:
     explicit GameManager(const GameConfig& config);
     ~GameManager() = default;
 
+    GameManager(const GameManager&) = delete;
+    GameManager& operator=(const GameManager&) = delete;
+    GameManager(GameManager&&) = default;
+    GameManager& operator=(GameManager&&) = default;
+
     // Game setup
     void SetupNewGame(const GameConfig& config);
+    void SetupGame(GameMode mode);
     void SetupFromFEN(const std::string& fen);
     void Reset();
+    void ResetGame() { Reset(); }
 
     // Game control
     bool StartGame();
@@ -70,6 +77,13 @@ public:
     Color GetCurrentPlayer() const { return board.GetCurrentPlayer(); }
     bool IsGameActive() const { return result == GameResult::ONGOING && gameStarted && !gamePaused; }
     bool IsGamePaused() const { return gamePaused; }
+    bool IsGameStarted() const { return gameStarted; }
+
+    bool IsInCheck() const;
+    bool IsGameOver() const;
+    bool IsCheckmate() const;
+    bool IsStalemate() const;
+    int GetCaptureCount() const { return gameStats.captures; }
 
     // Move history
     const std::vector<MoveHistoryEntry>& GetMoveHistory() const { return moveHistory; }
@@ -90,12 +104,15 @@ public:
     // Move validation and generation
     std::vector<Move> GetLegalMoves() const;
     std::vector<Move> GetLegalMoves(const Position& from) const;
+    std::vector<Move> GetValidMovesFromPosition(const Position& from) const;
     bool IsLegalMove(const Move& move) const;
+    bool IsValidMove(const Move& move) const { return IsLegalMove(move); }
 
     // Game analysis
     float GetCurrentEvaluation() const;
     std::string GetGamePGN() const;
     std::string GetCurrentFEN() const;
+    const GameStats& GetGameStats() const { return gameStats; }
 
     // Save/Load
     bool SaveGame(const std::string& filename) const;
@@ -115,6 +132,7 @@ private:
     void NotifyMoveMade(const Move& move);
     void NotifyGameEnd();
     void UpdateTimeControls();
+    void UpdateGameStats(const Move& move);
 
     // Algebraic notation
     std::string MoveToAlgebraic(const Move& move) const;
@@ -123,6 +141,9 @@ private:
     // PGN utilities
     std::string GetPieceSymbol(PieceType type) const;
     std::string DisambiguateMove(const Move& move, const std::vector<Move>& legalMoves) const;
+
+    // Helper methods
+    std::unique_ptr<Player> CreatePlayer(const PlayerConfig& config, Color color);
 };
 
 } // namespace Chess
