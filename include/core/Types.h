@@ -6,6 +6,8 @@
 #include <map>
 #include <memory>
 #include <chrono>
+#include <stdexcept>
+#include <sstream>
 
 namespace Chess {
 
@@ -52,7 +54,7 @@ enum class GameResult : uint8_t {
     TIMEOUT_BLACK = 9
 };
 
-// Difficulty levels for AI (updated for Day 5)
+// Difficulty levels for AI
 enum class Difficulty : uint8_t {
     BEGINNER = 0,
     EASY = 1,
@@ -63,13 +65,13 @@ enum class Difficulty : uint8_t {
     GRANDMASTER = 6
 };
 
-// Game modes (updated for Day 6)
+// Game modes
 enum class GameMode : uint8_t {
     HUMAN_VS_HUMAN = 0,
     HUMAN_VS_AI = 1,
     AI_VS_AI = 2,
-    FEN_POSITION_SETUP = 3, // New mode for custom position setup
-    PUZZLE_MODE = 4 // Placeholder for future puzzle mode
+    FEN_POSITION_SETUP = 3,
+    PUZZLE_MODE = 4
 };
 
 // Position on the chess board
@@ -99,12 +101,11 @@ struct Piece {
     bool IsWhite() const { return color == Color::WHITE; }
     bool IsBlack() const { return color == Color::BLACK; }
 
-    // Convert to legacy format for compatibility
     int8_t ToLegacyValue() const;
     static Piece FromLegacyValue(int8_t value);
 
     std::string ToString() const;
-    char ToChar() const;  // For FEN notation
+    char ToChar() const;
 };
 
 // Chess move representation
@@ -120,12 +121,12 @@ struct Move {
         : from(from), to(to), type(type), promotionPiece(PieceType::EMPTY) {}
 
     std::string ToAlgebraic() const;
-    std::string ToUCI() const;  // Universal Chess Interface format
+    std::string ToUCI() const;
 
     bool IsValid() const { return from.IsValid() && to.IsValid(); }
 };
 
-// Time control settings (updated for Day 5)
+// Time control settings
 struct TimeControl {
     std::string name;
     std::chrono::milliseconds baseTime;
@@ -154,7 +155,7 @@ struct PlayerConfig {
         : name(n), isHuman(human), difficulty(diff) {}
 };
 
-// Game configuration (updated for Day 6)
+// Game configuration
 struct GameConfig {
     GameMode mode;
     PlayerConfig whitePlayer;
@@ -165,23 +166,23 @@ struct GameConfig {
     GameConfig() : mode(GameMode::HUMAN_VS_HUMAN), useGui(false), initialFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {}
 };
 
-// Game statistics (new for Day 6)
+// Game statistics
 struct GameStats {
-    int totalMoves;
-    int whiteWins;
-    int blackWins;
-    int draws;
-
-    GameStats() : totalMoves(0), whiteWins(0), blackWins(0), draws(0) {}
+    int totalMoves = 0;
+    int captures = 0;
+    int checks = 0;
+    int castles = 0;
+    std::chrono::milliseconds totalTime{0};
+    std::chrono::steady_clock::time_point gameStartTime;
 };
 
-// Move history entry (updated for Day 6)
+// Move history entry
 struct MoveHistoryEntry {
     Move move;
     std::string algebraicNotation;
     std::chrono::milliseconds timeSpent;
     float evaluation;
-    int fullMoveNumber; // Added to store the move number
+    int fullMoveNumber;
 
     MoveHistoryEntry(const Move& m, const std::string& notation = "",
                      std::chrono::milliseconds time = std::chrono::milliseconds{0},
