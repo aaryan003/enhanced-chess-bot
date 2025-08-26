@@ -141,9 +141,6 @@ private:
     // PGN utilities
     std::string GetPieceSymbol(PieceType type) const;
     std::string DisambiguateMove(const Move& move, const std::vector<Move>& legalMoves) const;
-
-    // Helper methods
-    std::unique_ptr<Player> CreatePlayer(const PlayerConfig& config, Color color);
 };
 
 } // namespace Chess
