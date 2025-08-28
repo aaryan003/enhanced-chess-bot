@@ -5,6 +5,12 @@ project(EnhancedChessBot)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Set default build type to Debug if not specified and not multi-config generator
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    message(STATUS "Setting build type to 'Debug' as none was specified.")
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
+endif()
+
 # vcpkg integration (CLion passes toolchain automatically if set)
 if(DEFINED CMAKE_TOOLCHAIN_FILE)
     message(STATUS "Using vcpkg toolchain: ${CMAKE_TOOLCHAIN_FILE}")
@@ -20,7 +26,6 @@ find_package(fmt CONFIG REQUIRED)
 # Include directories
 include_directories(include)
 
-# Collect source files explicitly
 set(CORE_SOURCES
         src/core/Board.cpp
         src/core/Types.cpp
@@ -35,7 +40,7 @@ set(ENGINE_SOURCES
         src/engine/Engine.cpp
 )
 
-# ADD THIS: UI sources section
+# UI sources section
 set(UI_SOURCES
         src/ui/Gui.cpp
 )
@@ -44,7 +49,6 @@ set(MAIN_SOURCE
         src/main.cpp
 )
 
-# UPDATE THIS: Include UI_SOURCES in the SOURCES variable
 set(SOURCES
         ${CORE_SOURCES}
         ${GAME_SOURCES}
@@ -88,18 +92,24 @@ else()
     target_compile_options(chess-bot PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
-# Copy DLLs to output directory (for running inside CLion/MSVC)
+# Copy DLLs to output directory per configuration (Debug/Release) for Windows
 if(WIN32)
     add_custom_command(TARGET chess-bot POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:SFML::Graphics>
-            $<TARGET_FILE:SFML::Window>
-            $<TARGET_FILE:SFML::System>
-            $<TARGET_FILE:SFML::Audio>
-            $<TARGET_FILE:ImGui-SFML::ImGui-SFML>
-            $<TARGET_FILE:fmt::fmt>
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<$<CONFIG:Debug>:$<TARGET_FILE:SFML::Graphics>>
+            $<$<CONFIG:Release>:$<TARGET_FILE:SFML::Graphics>>
+            $<$<CONFIG:Debug>:$<TARGET_FILE:SFML::Window>>
+            $<$<CONFIG:Release>:$<TARGET_FILE:SFML::Window>>
+            $<$<CONFIG:Debug>:$<TARGET_FILE:SFML::System>>
+            $<$<CONFIG:Release>:$<TARGET_FILE:SFML::System>>
+            $<$<CONFIG:Debug>:$<TARGET_FILE:SFML::Audio>>
+            $<$<CONFIG:Release>:$<TARGET_FILE:SFML::Audio>>
+            $<$<CONFIG:Debug>:$<TARGET_FILE:ImGui-SFML::ImGui-SFML>>
+            $<$<CONFIG:Release>:$<TARGET_FILE:ImGui-SFML::ImGui-SFML>>
+            $<$<CONFIG:Debug>:$<TARGET_FILE:fmt::fmt>>
+            $<$<CONFIG:Release>:$<TARGET_FILE:fmt::fmt>>
             $<TARGET_FILE_DIR:chess-bot>
-            COMMENT "Copying required DLLs"
+        COMMENT "Copying required DLLs for current build configuration"
     )
 endif()
 
