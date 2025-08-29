@@ -3,6 +3,9 @@ build/
 bin/
 obj/
 cmake-build-debug-visual-studio/
+out/
+.vs/
+
 
 # Executables
 *.exe
@@ -18,6 +21,7 @@ chess-bot
 .idea/
 *.swp
 *.swo
+CmakeSettings.json
 
 # OS generated files
 .DS_Store
