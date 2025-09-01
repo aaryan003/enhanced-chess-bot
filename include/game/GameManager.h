@@ -42,7 +42,7 @@ private:
 public:
     GameManager();
     explicit GameManager(const GameConfig& config);
-    ~GameManager() = default;
+    ~GameManager();
 
     GameManager(const GameManager&) = delete;
     GameManager& operator=(const GameManager&) = delete;
