@@ -118,8 +118,8 @@ private:
     // Helper functions for move validation
     std::vector<Move> GetSlidingMoves(const Position& pos, const std::vector<Position>& directions) const;
     bool WouldBeInCheck(const Move& move, Color color) const;
-    void UpdateCastlingRights(const Move& move);
-    void UpdateEnPassant(const Move& move);
+    void UpdateCastlingRights(const Move& move, const Piece& movingPiece, const Piece& capturedPiece);
+    void UpdateEnPassant(const Move& move, const Piece& movingPiece);
 
     // Position evaluation helpers
     static const std::array<std::array<float, BOARD_SIZE>, BOARD_SIZE> PAWN_TABLE;
