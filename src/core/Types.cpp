@@ -1,6 +1,7 @@
 #include "core/Types.h"
 #include <stdexcept>
 #include <sstream>
+#include <cctype>
 
 namespace Chess {
 
@@ -80,7 +81,7 @@ char Piece::ToChar() const {
         default: return '?';
     }
 
-    return (color == Color::WHITE) ? std::toupper(baseChar) : baseChar;
+    return (color == Color::WHITE) ? static_cast<char>(std::toupper(baseChar)) : baseChar;
 }
 
 // Move implementation
