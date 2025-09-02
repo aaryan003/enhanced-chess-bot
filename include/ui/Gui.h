@@ -1,201 +1,173 @@
+// Gui.h
 #pragma once
 
 #include "game/GameManager.h"
 #include "core/Board.h"
 #include "game/Player.h"
 #include "core/Types.h"
+
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
 #include <SFML/Window.hpp>
+
 #include <imgui.h>
 #include <imgui-SFML.h>
+
 #include <memory>
 #include <vector>
 #include <map>
 #include <stack>
 #include <string>
 #include <array>
-#include <imgui.h>
-#include <imgui-SFML.h>
-
+#include <optional>
 
 namespace Chess {
 
-    // Enums for GUI settings
-    enum class BoardTheme {
-        CLASSIC,
-        DARK,
-        BLUE,
-        GREEN,
-        PURPLE,
-        MARBLE
-    };
+    // Forward declare enums to use them in GuiSettings
+    enum class BoardTheme;
+    enum class PieceSet;
 
-    enum class PieceSet {
-        CLASSIC,
-        MODERN,
-        STAUNTON,
-        MEDIEVAL
-    };
-
-    enum class GuiState {
-        MAIN_MENU,
-        GAME_SETUP,
-        PLAYING,
-        PAUSED,
-        GAME_OVER,
-        ANALYSIS,
-        SETTINGS
-    };
-
-    // Structure for board themes
-    struct ThemeColors {
-        sf::Color lightSquare;
-        sf::Color darkSquare;
-        sf::Color highlightColor;
-        sf::Color moveHighlight;
-        sf::Color lastMoveHighlight;
-        sf::Color checkHighlight;
-        sf::Color borderColor;
-        std::string name;
-    };
-
-    // Structure for move arrows
-    struct MoveArrow {
-        Position from;
-        Position to;
-        sf::Color color;
-        float thickness;
-    };
-
-    // Settings structure
-    struct GuiSettings {
-        BoardTheme boardTheme = BoardTheme::CLASSIC;
-        PieceSet pieceSet = PieceSet::CLASSIC;
-        bool showCoordinates = true;
-        bool showLastMove = true;
-        bool showPossibleMoves = true;
-        bool enableSounds = true;
-        bool showMoveArrows = true;
-        bool enableAnimations = true;
-        float pieceScale = 0.85f;
-        float boardRotation = 0.0f;
-        int windowWidth = 1200;
-        int windowHeight = 900;
-        bool showEngineAnalysis = true;
-        bool showMoveHistory = true;
-        bool showGameInfo = true;
-        int engineDepth = 10;
-        float evaluationBarWidth = 20.0f;
-        bool showEvaluationBar = true;
-    };
-
-    /**
-     * @class Gui
-     * @brief Advanced GUI manager with ImGui integration and professional features
-     */
     class Gui {
-    private:
-        // Core components
-        sf::RenderWindow window;
-        GameManager& gameManager;
-        sf::Clock deltaClock;
-        GuiState currentState = GuiState::MAIN_MENU;
-        GuiSettings settings;
-
-        // Board rendering properties
-        float boardSize = 640.0f;
-        float squareSize = boardSize / BOARD_SIZE;
-        sf::Vector2f boardOffset = {50.0f, 50.0f};
-
-        // Textures and sprites
-        std::map<PieceType, std::map<Color, sf::Sprite>> pieceSprites;
-        std::vector<ThemeColors> themes;
-
-        // UI panels and states
-        bool showMainMenu = true;
-        bool showGameSetup = false;
-        bool showAbout = false;
-
-        // Game state
-        bool isPaused = false;
-        bool isAnalysisMode = false;
-        Position selectedPosition = {-1, -1};
-        std::vector<Position> possibleMoves;
-        std::vector<MoveArrow> moveArrows;
-        Position lastMoveFrom = {-1, -1};
-        Position lastMoveTo = {-1, -1};
-        std::vector<MoveHistoryEntry> tempMoveHistory;
-        std::stack<Move> redoStack;
-
-
-        // Drag and drop
-        bool isDragging = false;
-        sf::Vector2f dragOffset;
-        sf::Vector2i mousePos;
-        sf::Sprite* draggedSprite = nullptr;
-
-        // Animation system
-        struct PieceAnimation {
-            Position from;
-            Position to;
-            sf::Vector2f currentPos;
-            sf::Vector2f startPos;
-            sf::Vector2f endPos;
-            float progress;
-            float duration;
-            bool active;
-            PieceType pieceType;
-            Color pieceColor;
+    public:
+        // ---- GUI State Machine ----
+        enum class GuiState {
+            MAIN_MENU,
+            GAME_SETUP,
+            PLAYING,
+            PAUSED,
+            GAME_OVER,
+            ANALYSIS,
+            SETTINGS
         };
-        PieceAnimation currentAnimation;
 
-        // Engine analysis data
+        // ---- Enums for Settings ----
+        enum class BoardTheme { CLASSIC, DARK, BLUE, GREEN, PURPLE, MARBLE };
+        enum class PieceSet { CLASSIC, MODERN, STAUNTON, MEDIEVAL };
+
+        struct GuiSettings {
+            int windowWidth = 1280;
+            int windowHeight = 800;
+            int engineDepth = 10;
+            float evaluationBarWidth = 30.0f;
+
+            bool showEngineAnalysis = true;
+            bool showMoveHistory = true;
+            bool showGameInfo = true;
+            bool showEvaluationBar = true;
+
+            float pieceScale = 1.0f;
+            float boardRotation = 0.0f;
+
+            bool showCoordinates = true;
+            bool showLastMove = true;
+            bool showPossibleMoves = true;
+            bool showMoveArrows = true;
+            bool enableAnimations = true;
+            bool enableSounds = true;
+
+            BoardTheme boardTheme = BoardTheme::CLASSIC;
+            PieceSet pieceSet = PieceSet::CLASSIC;
+        };
+
         struct EngineEvaluation {
-            float score = 0.0f;
-            std::string bestMove = "";
             int depth = 0;
-            std::vector<std::string> principalVariation;
             int nodes = 0;
-            int time = 0;
+            float score = 0.0f;
+            std::string bestMove;
+            std::vector<std::string> principalVariation;
         };
-        EngineEvaluation currentEvaluation;
 
-        // Private methods - Core rendering
-        void initializeThemes();
-        void loadTextures();
-        void loadPieceTextures();
-        void createDefaultPieceTextures();
+        // ---- Constructor / Destructor ----
+        Gui(GameManager& gameManager, sf::RenderWindow& window);
+        ~Gui();
 
-        // Rendering methods
-        void renderGame();
-        void renderBoard();
-        void renderCoordinates();
-        void renderPieces();
-        void renderHighlights();
-        void renderMoveArrows();
-        void renderLastMove();
-        void renderDraggedPiece();
-        void renderEvaluationBar();
-        void renderGamePanels();
+        // ---- Main Loop ----
+        void run();
 
-        // ImGui panels
+        // ---- Render Functions ----
+        void renderMenuBar();
         void renderMainMenu();
         void renderGameSetup();
         void renderGameControls();
         void renderMoveHistory();
         void renderEngineAnalysis();
         void renderGameInfo();
+        void renderEvaluationBar();
         void renderSettings();
         void renderAboutDialog();
-        void renderMenuBar();
 
-        // Event handling
+        // ---- State Management ----
+        void setState(GuiState state);
+
+    private:
+        // ---- Core Components ----
+        GameManager& gameManager;
+        sf::RenderWindow& window;
+
+        // ---- GUI State ----
+        GuiState currentState;
+        bool isPaused = false;
+        bool isAnalysisMode = false;
+        bool showAbout = false;
+
+        GuiSettings settings;
+        EngineEvaluation currentEvaluation;
+
+        // ---- Board Layout ----
+        sf::Vector2f boardOffset;
+        float boardSize;
+        float squareSize;
+        static constexpr int BOARD_SIZE = 8; // Define board dimensions
+
+        // ---- Input & Interaction State ----
+        bool isDragging = false;
+        Position selectedPosition = Position(-1, -1);
+        sf::Vector2f dragOffset;
+        sf::Vector2i mousePos;
+        std::vector<Position> possibleMoves;
+        Position lastMoveFrom = Position(-1, -1);
+        Position lastMoveTo = Position(-1, -1);
+
+        // ---- Animation ----
+        struct AnimationState {
+            bool active = false;
+            float duration = 0.2f; // Adjusted for a slightly faster animation
+            float progress = 0.0f;
+            Position from, to;
+            sf::Vector2f startPos, endPos, currentPos;
+            PieceType pieceType;
+            Color pieceColor;
+        } currentAnimation;
+
+        // ---- Graphics & Theming ----
+        struct ThemeColors {
+            sf::Color lightSquare;
+            sf::Color darkSquare;
+            sf::Color selectedSquare;
+            sf::Color possibleMove;
+            sf::Color lastMove;
+            sf::Color checkHighlight;
+            sf::Color borderColor;
+            std::string name;
+        };
+        std::vector<ThemeColors> themes;
+        std::map<PieceType, std::map<Color, sf::Sprite>> pieceSprites;
+
+        // ---- Move Arrows & History ----
+        struct MoveArrow {
+            Position from, to;
+            sf::Color color;
+            float thickness;
+        };
+        std::vector<MoveArrow> moveArrows;
+        std::stack<Move> redoStack;
+
+        // ---- Event Handling ----
         void handleMouseEvents(const sf::Event& event);
         void handleKeyboardEvents(const sf::Event& event);
 
-        // Game logic helpers
-        void makeMove(const Position& from, const Position& to, PieceType promotion = PieceType::EMPTY);
+        // ---- Game Action Helpers ----
+        void makeMove(const Position& from, const Position& to, PieceType promotion = PieceType::QUEEN);
         void undoMove();
         void redoMove();
         void resetGame();
@@ -204,44 +176,52 @@ namespace Chess {
         void enterAnalysisMode();
         void exitAnalysisMode();
 
-        // Coordinate conversion
+        // ---- Rendering Helpers ----
+        void renderGame();
+        void renderGamePanels();
+        void renderBoard();
+        void renderCoordinates();
+        void renderHighlights();
+        void renderLastMove();
+        void renderMoveArrows();
+        void renderPieces();
+        void renderDraggedPiece();
+
+        // ---- Coordinate & Position Helpers ----
         Position getBoardPosition(const sf::Vector2i& mousePos) const;
         sf::Vector2f getScreenPosition(const Position& boardPos) const;
         bool isPositionOnBoard(const sf::Vector2i& mousePos) const;
 
-        // Move validation and highlighting
+        // ---- Move Generation & Drawing ----
         void updatePossibleMoves();
-        void addMoveArrow(const Position& from, const Position& to, const sf::Color& color = sf::Color::Yellow);
+        void addMoveArrow(const Position& from, const Position& to, const sf::Color& color = sf::Color(255, 165, 0, 150));
         void clearMoveArrows();
 
-        // Animation system
+        // ---- Animation ----
         void startPieceAnimation(const Position& from, const Position& to, PieceType piece, Color color);
         void updateAnimation(float deltaTime);
 
-        // Theme and appearance
+        // ---- Initialization & Configuration ----
+        void initializeThemes();
         void applyTheme(BoardTheme theme);
-        sf::Color getSquareColor(int x, int y) const;
+        void loadTextures();
+        void loadPieceTextures();
+        void createDefaultPieceTextures();
         void updateBoardLayout();
 
-        // Settings management
-        void saveSettings();
+        // ---- Settings Management ----
         void loadSettings();
+        void saveSettings();
         void applySettings();
 
-        // Utility methods
+        // ---- Utility ----
+        sf::Color getSquareColor(int x, int y) const;
         std::string positionToString(const Position& pos) const;
         std::string moveToString(const Move& move) const;
         sf::Color blendColors(const sf::Color& a, const sf::Color& b, float factor) const;
         void centerWindow();
-
-    public:
-        Gui(GameManager& manager);
-        ~Gui();
-        void run();
-        void setState(GuiState state);
-        GuiState getState() const { return currentState; }
-        void updateEngineEvaluation(float score, const std::string& bestMove, int depth);
-        void showNotification(const std::string& message, float duration = 3.0f);
+        void updateEngineEvaluation();
+        void showNotification(const std::string& message);
     };
 
 } // namespace Chess
