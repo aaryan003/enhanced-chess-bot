@@ -73,7 +73,17 @@ const std::array<std::array<float, BOARD_SIZE>, BOARD_SIZE> Board::KING_TABLE = 
     {{ 2.0,  3.0,  1.0,  0.0,  0.0,  1.0,  3.0,  2.0}}
 }};
 
-Board::Board() {
+Board::Board()
+    : currentPlayer(Color::WHITE),
+    whiteKingSideCastle(false),
+    whiteQueenSideCastle(false),
+    blackKingSideCastle(false),
+    blackQueenSideCastle(false),
+    enPassantTarget(),
+    halfMoveClock(0),
+    fullMoveNumber(1)
+{
+    // Initialize the board array to empty
     Clear();
 }
 
@@ -109,9 +119,10 @@ void Board::SetupStartingPosition() {
 }
 
 void Board::Clear() {
-    for (auto& row : squares) {
-        for (auto& piece : row) {
-            piece = Piece();
+    // Initialize all squares to empty
+    for (int y = 0; y < BOARD_SIZE; ++y) {
+        for (int x = 0; x < BOARD_SIZE; ++x) {
+            squares[y][x] = Piece();  // Empty piece
         }
     }
 
@@ -543,6 +554,9 @@ bool Board::MakeMove(const Move& move) {
     Piece movingPiece = GetPiece(move.from);
     Piece capturedPiece = GetPiece(move.to);
 
+    UpdateCastlingRights(move, movingPiece, capturedPiece);
+    UpdateEnPassant(move, movingPiece);
+
     // Handle special moves
     switch (move.type) {
         case MoveType::CASTLING: {
@@ -581,16 +595,10 @@ bool Board::MakeMove(const Move& move) {
         }
     }
 
-    // Update castling rights
-    UpdateCastlingRights(move);
-
-    // Update en passant target
-    UpdateEnPassant(move);
-
-    // Update move clocks
     if (movingPiece.type == PieceType::PAWN || !capturedPiece.IsEmpty()) {
         ResetHalfMoveClock();
-    } else {
+    }
+    else {
         IncrementHalfMoveClock();
     }
 
@@ -598,10 +606,8 @@ bool Board::MakeMove(const Move& move) {
         IncrementFullMoveNumber();
     }
 
-    // Switch players
+    // Switch player and record position
     SwitchPlayer();
-
-    // Add position to history
     AddToHistory();
 
     return true;
@@ -711,18 +717,13 @@ bool Board::IsInsufficientMaterial() const {
 }
 
 bool Board::IsThreefoldRepetition() const {
-    if (positionHistory.size() < 6) return false; // Need at least 3 positions
+    if (positionHistory.size() < 3) return false;
 
     std::string currentPos = GetPositionHash();
     int count = 0;
-
     for (const auto& pos : positionHistory) {
-        if (pos == currentPos) {
-            count++;
-            if (count >= 3) return true;
-        }
+        if (pos == currentPos && ++count >= 3) return true;
     }
-
     return false;
 }
 
@@ -903,7 +904,13 @@ std::string Board::ToString() const {
 }
 
 std::string Board::GetPositionHash() const {
-    return ToFEN().substr(0, ToFEN().find(' ', ToFEN().find(' ') + 1)); // Position + castling rights
+    std::istringstream ss(ToFEN());
+    std::string placement, active, castling, enpass;
+    if (!(ss >> placement >> active >> castling >> enpass)) {
+        return ToFEN(); // fallback
+    }
+    // include placement, active color, castling rights and en-passant target
+    return placement + " " + active + " " + castling + " " + enpass;
 }
 
 void Board::AddToHistory() {
@@ -944,46 +951,43 @@ bool Board::WouldBeInCheck(const Move& move, Color color) const {
     return tempBoard.IsInCheck(color);
 }
 
-void Board::UpdateCastlingRights(const Move& move) {
-    const Piece& piece = GetPiece(move.from);
-
-    // King moves disable all castling for that color
-    if (piece.type == PieceType::KING) {
-        SetCastlingRights(piece.color, false, false);
+void Board::UpdateCastlingRights(const Move& move, const Piece& movingPiece, const Piece& capturedPiece) {
+    // King moves disable castling for that color
+    if (movingPiece.type == PieceType::KING) {
+        SetCastlingRights(movingPiece.color, false, false);
     }
 
     // Rook moves disable castling on that side
-    if (piece.type == PieceType::ROOK) {
-        if (piece.color == Color::WHITE) {
+    if (movingPiece.type == PieceType::ROOK) {
+        if (movingPiece.color == Color::WHITE) {
             if (move.from.x == 0 && move.from.y == 7) whiteQueenSideCastle = false;
             if (move.from.x == 7 && move.from.y == 7) whiteKingSideCastle = false;
-        } else {
+        }
+        else {
             if (move.from.x == 0 && move.from.y == 0) blackQueenSideCastle = false;
             if (move.from.x == 7 && move.from.y == 0) blackKingSideCastle = false;
         }
     }
 
-    // Rook captures disable castling
-    const Piece& captured = GetPiece(move.to);
-    if (captured.type == PieceType::ROOK) {
-        if (captured.color == Color::WHITE) {
+    // Rook captures disable castling on the captured side
+    if (capturedPiece.type == PieceType::ROOK) {
+        if (capturedPiece.color == Color::WHITE) {
             if (move.to.x == 0 && move.to.y == 7) whiteQueenSideCastle = false;
             if (move.to.x == 7 && move.to.y == 7) whiteKingSideCastle = false;
-        } else {
+        }
+        else {
             if (move.to.x == 0 && move.to.y == 0) blackQueenSideCastle = false;
             if (move.to.x == 7 && move.to.y == 0) blackKingSideCastle = false;
         }
     }
 }
 
-void Board::UpdateEnPassant(const Move& move) {
-    const Piece& piece = GetPiece(move.from);
-
+void Board::UpdateEnPassant(const Move& move, const Piece& movingPiece) {
     // Clear previous en passant target
     enPassantTarget = Position();
 
-    // Set new en passant target for pawn double moves
-    if (piece.type == PieceType::PAWN && std::abs(move.to.y - move.from.y) == 2) {
+    // If pawn double-moved, set en-passant target square
+    if (movingPiece.type == PieceType::PAWN && std::abs(move.to.y - move.from.y) == 2) {
         enPassantTarget = Position(move.from.x, (move.from.y + move.to.y) / 2);
     }
 }
